@@ -1,32 +1,32 @@
 class Story {
-  final String id;
+  final int id;
   final String title;
   final String text;
 
   Story({required this.id, required this.title, required this.text});
 
   // Factory constructor to create an ApiObject from JSON
-  factory Story.fromJson(Map<String, dynamic> json) {
+  factory Story.fromJson(List<dynamic> json) {
     return Story(
-      id: json['id'],
-      title: json['title'],
-      text: json['text'],
+      id: json[0],
+      title: json[1],
+      text: json[2],
     );
   }
 }
 
 class Word {
-  final String id;
+  final int id;
   final String word;
   bool isSelected;
 
   Word({required this.id, required this.word, this.isSelected = false});
 
   // Factory constructor to create an ApiObject from JSON
-  factory Word.fromJson(Map<String, dynamic> json) {
+  factory Word.fromJson(List<dynamic> json) {
     return Word(
-      id: json['id'],
-      word: json['word'],
+      id: json[0],
+      word: json[1],
     );
   }
 }
