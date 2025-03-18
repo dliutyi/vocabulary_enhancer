@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:vocabulary_enhancer/stories.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,110 +17,233 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: StoryListScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class StoryListScreen extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _StoryListScreenState createState() => _StoryListScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _StoryListScreenState extends State<StoryListScreen> {
+  // 2. Fetching Data (Simulate API Call)
+  Future<List<Story>> fetchStories() async {
+    final response = await http
+        .get(Uri.parse('https://67d9c4fa35c87309f52a17c4.mockapi.io/stories'));
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+    if (response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      // then parse the JSON.
+      final List<dynamic> storiesJson = jsonDecode(response.body);
+      return storiesJson.map((json) => Story.fromJson(json)).toList();
+    } else {
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception('Failed to load stories');
+    }
+  }
+
+  Future<List<Word>> fetchWords() async {
+    final response = await http.get(
+        Uri.parse('https://67d9c4fa35c87309f52a17c4.mockapi.io/words')); // Replace with your actual words API endpoint
+
+    if (response.statusCode == 200) {
+      final List<dynamic> wordsJson = jsonDecode(response.body);
+      return wordsJson.map((json) => Word.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load words');
+    }
+  }
+
+  void _showWordSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return WordSelectionDialog(fetchWords: fetchWords,);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Stories List'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        // 3. FutureBuilder
+        child: FutureBuilder<List<Story>>(
+          future: fetchStories(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator(); // Show loading indicator
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}'); // Show error message
+            } else if (snapshot.hasData) {
+              final List<Story> stories = snapshot.data!;
+              // 4. ListView.builder
+              return ListView.builder(
+                itemCount: stories.length,
+                itemBuilder: (context, index) {
+                  // 5. Item Widget
+                  final story = stories[index];
+                  return StoryListItem(story: story);
+                },
+              );
+            } else {
+              return Text('No data available'); // Show message if no data
+            }
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      bottomNavigationBar: BottomAppBar(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton(
+            onPressed: _showWordSelectionDialog,
+            child: Text('Generate'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+class StoryListItem extends StatefulWidget {
+  final Story story;
+
+  const StoryListItem({Key? key, required this.story}) : super(key: key);
+
+  @override
+  _StoryListItemState createState() => _StoryListItemState();
+}
+
+class _StoryListItemState extends State<StoryListItem> {
+  final GlobalKey textKey = GlobalKey();
+  bool isExpanded = false;
+
+  String _trimDescription(String description, int maxLines) {
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(
+        text: description,
+        style: DefaultTextStyle.of(context).style,
+      ),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    )..layout(minWidth: 0, maxWidth: MediaQuery.of(context).size.width - 100); // Adjust maxWidth as needed
+
+    if (textPainter.didExceedMaxLines) {
+      final endIndex = textPainter.getPositionForOffset(Offset(textPainter.size.width, textPainter.size.height)).offset;
+      return description.substring(0, endIndex) + '...';
+    } else {
+      return description;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.all(8.0),
+      child: ListTile(
+        title: Text(widget.story.title),
+        subtitle: isExpanded
+            ? Text(widget.story.text)
+            : Text(_trimDescription(widget.story.text, 2), key: textKey),
+        onTap: () {
+          setState(() {
+            isExpanded = !isExpanded;
+          });
+        },
+      ),
+    );
+  }
+}
+
+// Word Selection Dialog
+class WordSelectionDialog extends StatefulWidget {
+  final Future<List<Word>> Function() fetchWords;
+
+  WordSelectionDialog({required this.fetchWords});
+
+  @override
+  _WordSelectionDialogState createState() => _WordSelectionDialogState();
+}
+
+class _WordSelectionDialogState extends State<WordSelectionDialog> {
+  late Future<List<Word>> _wordsFuture;
+  List<Word> selectedWords = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _wordsFuture = widget.fetchWords();
+  }
+
+  void _sendRequest(List<Word> selectedWords) {
+    // TODO: Implement sending the request with selected words
+    print("Selected words: ${selectedWords.map((w) => w.word).toList()}");
+    Navigator.of(context).pop(); // Close the dialog
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Select Words'),
+      content: FutureBuilder<List<Word>>(
+        future: _wordsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}');
+          } else if (snapshot.hasData) {
+            final List<Word> words = snapshot.data!;
+            return Container(
+              width: double.maxFinite, // Make the container take full width
+              child: ListView.builder(
+                shrinkWrap: true, // Allow the ListView to take the space it needs
+                itemCount: words.length,
+                itemBuilder: (context, index) {
+                  final word = words[index];
+                  return CheckboxListTile(
+                    title: Text(word.word),
+                    value: word.isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        word.isSelected = value ?? false;
+                        if (word.isSelected) {
+                          selectedWords.add(word);
+                        } else {
+                          selectedWords.remove(word);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+            );
+          } else {
+            return Text('No words available');
+          }
+        },
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+        ),
+        TextButton(
+          child: Text('Send Request'),
+          onPressed: () {
+            _sendRequest(selectedWords);
+          },
+        ),
+      ],
     );
   }
 }
