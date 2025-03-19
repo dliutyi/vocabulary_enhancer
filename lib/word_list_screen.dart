@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:vocabulary_enhancer/stories.dart';
 import 'package:vocabulary_enhancer/word_dialog.dart';
 
+import 'config.dart';
+
 class WordListScreen extends StatefulWidget {
   @override
   _WordListScreenState createState() => _WordListScreenState();
@@ -13,7 +15,7 @@ class WordListScreen extends StatefulWidget {
 class _WordListScreenState extends State<WordListScreen> {
   Future<List<Word>> fetchWords() async {
     final response = await http.get(
-        Uri.parse('https://ambitious-noreen-dliutyi-b3e46d66.koyeb.app/words'));
+        Uri.http(AppConfig.serverLocation, 'words'));
 
     if (response.statusCode == 200) {
       final List<dynamic> wordsJson = jsonDecode(response.body);
@@ -74,12 +76,12 @@ class _WordListScreenState extends State<WordListScreen> {
 }
 
 class AddWordDialog extends StatefulWidget {
-final Function(String) onWordAdded;
+  final Function(String) onWordAdded;
 
-AddWordDialog({required this.onWordAdded});
+  AddWordDialog({required this.onWordAdded});
 
-@override
-_AddWordDialogState createState() => _AddWordDialogState();
+  @override
+  _AddWordDialogState createState() => _AddWordDialogState();
 }
 
 class _AddWordDialogState extends State<AddWordDialog> {

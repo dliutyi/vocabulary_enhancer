@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:vocabulary_enhancer/config.dart';
 import 'package:vocabulary_enhancer/stories.dart';
 import 'package:vocabulary_enhancer/word_dialog.dart';
 
@@ -14,7 +15,7 @@ class _StoryListScreenState extends State<StoryListScreen> {
   // 2. Fetching Data (Simulate API Call)
   Future<List<Story>> fetchStories() async {
     final response = await http
-        .get(Uri.parse('https://ambitious-noreen-dliutyi-b3e46d66.koyeb.app/stories'));
+        .get(Uri.http(AppConfig.serverLocation, 'stories'));
 
     if (response.statusCode == 200) {
       // If the server did return a 200 OK response,
@@ -30,7 +31,7 @@ class _StoryListScreenState extends State<StoryListScreen> {
 
   Future<List<Word>> fetchWords() async {
     final response = await http.get(
-        Uri.parse('https://ambitious-noreen-dliutyi-b3e46d66.koyeb.app/words')); // Replace with your actual words API endpoint
+        Uri.http(AppConfig.serverLocation, 'words')); // Replace with your actual words API endpoint
 
     if (response.statusCode == 200) {
       final List<dynamic> wordsJson = jsonDecode(response.body);
